@@ -6,22 +6,21 @@
 #define DEVICE1_PORT Serial3
 #define DEVICE1_BAUD 115200
 
-#define SENDER false
+#define SENDER true
 
 void handlePacketDevice1(byte, byte [], unsigned);
 void handleFileTransfer1(byte dataIn[], unsigned dataSize);
 
-
 // Stuff that's only useful for the demo 
+void sendFile();
 void readFile(byte []);
 unsigned findImageSize();
-int freeram();
 
 const int chipSelect = BUILTIN_SDCARD;
 
 Capsule device1(0xFF,0xFA,handlePacketDevice1);
 
-int fragmentSize = 32;
+int fragmentSize = 200;
 double codingRate = 2.0;
 
 TeleFile fileTransfer1(fragmentSize,codingRate,handleFileTransfer1);
@@ -29,26 +28,105 @@ TeleFile fileTransfer1(fragmentSize,codingRate,handleFileTransfer1);
 void setup() {
   DEVICE1_PORT.begin(DEVICE1_BAUD);
   Serial.begin(115200);
-
-  delay(100);
+  SD.begin(chipSelect);
 
   //const unsigned imageBufferSize = findImageSize();
   //byte imageBuffer[imageBufferSize];
   //readFile(imageBuffer);  
 
   // Random data buffer, will be replaced by an actual file later
+}
+
+void loop() {
+  while(DEVICE1_PORT.available()) {
+    byte data = DEVICE1_PORT.read();
+    device1.decode(data);
+  }
+  static int lastFileSent = -40000;
+  if ((millis()-lastFileSent)>45000) {
+    lastFileSent = millis();
+    sendFile();
+  } 
+}
+
+void handlePacketDevice1(byte packetId, byte dataIn[], unsigned len) {
+  switch (packetId) {
+    case 0x00:
+      if (random(0,100) < 10) {
+        Serial.println("RX correct but dropping packet :)");
+      }
+      else {
+        Serial.print("RX correct frag number: "); Serial.println(dataIn[0] << 8 | dataIn[1]);
+        fileTransfer1.decode(dataIn, len);
+      }
+    break;
+    case 0x01:
+    break;
+    default:
+    break;
+  }
+}
+
+void handleFileTransfer1(byte dataIn[], unsigned dataSize) {
+  // Do something with the file
+  Serial.print("Received file of size "); Serial.println(dataSize);
+  Serial.print("First 8 bytes: ");
+  digitalWrite(LED_BUILTIN, HIGH);
+  for (unsigned i = 0; i < min(dataSize,8); i++) {
+    Serial.print(dataIn[i]); Serial.print(" ");
+  }
+  Serial.println();
+  delay(100);
+  digitalWrite(LED_BUILTIN, LOW);
+  File file = SD.open("imageWritten.jpeg", FILE_WRITE);
+  if (file) {
+    file.write(dataIn, dataSize);
+    file.close();
+    Serial.println("File write successful!!!!");
+  }
+  else {
+    Serial.println("Error opening imageWritten.jpg");
+  }
+}
+
+unsigned findImageSize() {
+  File file = SD.open("image.jpeg");
+  if (file) {
+    unsigned result = file.size();
+    file.close();
+    return result;
+  } else {
+    Serial.println("error opening image.jpg");
+    return 0;
+  }
+}
+
+void readFile(byte dataOut[]) {
+  File file = SD.open("image.jpeg");
+  if (file) {
+    unsigned i = 0;
+    while (file.available()) {
+      dataOut[i] = file.read();
+      i++;
+    }
+    file.close();
+  }
+  else {
+    Serial.println("error opening image.jpg");
+  }
+}
+
+void sendFile() {
   if (SENDER) {
-    delay(500);
-    SD.begin(chipSelect);
-    const unsigned imageBufferSize = 1024;
+    const unsigned imageBufferSize = findImageSize();
+    Serial.print("Image size = ");
+    Serial.println(imageBufferSize);
     byte imageBuffer[imageBufferSize];
-    for (unsigned i = 0; i < imageBufferSize; i++) {
-      imageBuffer[i] = uint8_t(i);
-    } 
+    readFile(imageBuffer);
 
     const unsigned outputLen = fileTransfer1.computeCodedSize(imageBufferSize);
     const unsigned fragmentCutSize = fileTransfer1.getFragmentSize();
-    Serial.print("Fragment cut size = "); Serial.println(fragmentCutSize);
+    
     const unsigned numberOfCodedFragments = outputLen / fragmentCutSize;
 
     unsigned numberOfUncodedFragmentsTemp = int(imageBufferSize / fragmentSize);
@@ -59,7 +137,14 @@ void setup() {
     }
     const unsigned numberOfUncodedFragments = numberOfUncodedFragmentsTemp;
 
-    byte output[outputLen];
+    Serial.print("Fragment cut size = "); Serial.println(fragmentCutSize);
+    Serial.print("Number of coded fragments = "); Serial.println(numberOfCodedFragments);
+    Serial.print("Output len = "); Serial.println(outputLen);
+    Serial.print("Number of uncoded fragments = "); Serial.println(numberOfUncodedFragments);
+
+    byte *output;
+    output = new byte[outputLen];
+
     static unsigned timeBefore = millis();
     fileTransfer1.encode(imageBuffer, imageBufferSize, output);
     Serial.print("Done encoding with time = "); Serial.println(millis()-timeBefore);
@@ -86,74 +171,7 @@ void setup() {
       delete[] packetToSend;
       delay(10);
     }
+    delete[] output;
     Serial.println("Done sending data");
   }
-}
-
-void loop() {
-  while(DEVICE1_PORT.available()) {
-    byte data = DEVICE1_PORT.read();
-    device1.decode(data);
-  }
-}
-
-void handlePacketDevice1(byte packetId, byte dataIn[], unsigned len) {
-
-  switch (packetId) {
-    case 0x00:
-      Serial.print("Received correct file fragment number: "); Serial.println(dataIn[0] << 8 | dataIn[1]);
-      fileTransfer1.decode(dataIn, len);
-    break;
-    case 0x01:
-    break;
-    default:
-    break;
-  }
-}
-
-void handleFileTransfer1(byte dataIn[], unsigned dataSize) {
-  // Do something with the file
-  Serial.print("Received file of size "); Serial.println(dataSize);
-  digitalWrite(LED_BUILTIN, HIGH);
-  for (unsigned i = 0; i < dataSize; i++) {
-    Serial.print(dataIn[i]); Serial.print(" ");
-  }
-  Serial.println();
-  delay(100);
-  digitalWrite(LED_BUILTIN, LOW);
-}
-
-unsigned findImageSize() {
-  File file = SD.open("image.jpg");
-  if (file) {
-    unsigned result = file.size();
-    file.close();
-    return result;
-  } else {
-    Serial.println("error opening image.jpg");
-    return 0;
-  }
-}
-
-void readFile(byte dataOut[]) {
-  File file = SD.open("image.jpg");
-  if (file) {
-    unsigned i = 0;
-    while (file.available()) {
-      dataOut[i] = file.read();
-      i++;
-    }
-    file.close();
-  }
-  else {
-    Serial.println("error opening image.jpg");
-  }
-}
-
-extern unsigned long _heap_start;
-extern unsigned long _heap_end;
-extern char *__brkval;
-
-int freeram() {
-  return (char *)&_heap_end - __brkval;
 }

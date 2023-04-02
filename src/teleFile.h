@@ -5,7 +5,9 @@
 //#define NB_FRAGMENT_PER_FRAME 4
 
 #define NB_FRAGMENT_MAX 500
-#define FRAGMENT_SIZE_MAX 110
+#define FRAGMENT_SIZE_MAX 200
+
+// The max lenght of the transmitted file will be (FRAGMENT_SIZE_MAX * NB_FRAGMENT_MAX) = 100 000 bytes
 
 enum status {
     WAITING = 0,
@@ -34,6 +36,7 @@ class TeleFile {
     unsigned index[NB_FRAGMENT_MAX];
     unsigned indexOrder[NB_FRAGMENT_MAX];
     status currentStatus;
+    byte STOP_BYTE = 0xFE;
 };
 
 int prbs16(int);
