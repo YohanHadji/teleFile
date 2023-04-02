@@ -3,22 +3,9 @@
 TeleFile::TeleFile(unsigned fragmentSizeInput, double codingRateInput, void (*function)(byte [], unsigned)) 
 : fragmentSize(fragmentSizeInput), codingRate(codingRateInput), functionCallBack(function), lastFrameNumber(2), currentStatus(WAITING)
 {
-    /* CODED_F_MEM = new byte*[NB_FRAGMENT_MAX];
-    for (int i = 0; i < NB_FRAGMENT_MAX; i++) {
-        CODED_F_MEM[i] = new byte[fragmentSizeInput];
-    }
-
-    combinationMatrix = new byte*[NB_FRAGMENT_MAX];
-    for (int i = 0; i < NB_FRAGMENT_MAX; i++) {
-        combinationMatrix[i] = new byte[NB_FRAGMENT_MAX];
-    } */
 }
 
 TeleFile::~TeleFile() {
-    /* for (int i = 0; i < NB_FRAGMENT_MAX; i++) {
-        delete[] CODED_F_MEM[i];
-    }
-    delete[] CODED_F_MEM; */
 }
 
 unsigned TeleFile::getFragmentSize() {
@@ -86,16 +73,12 @@ void TeleFile::encode(byte dataIn[], unsigned lenIn, byte dataOut[]) {
         }
     }
 
-    Serial.println("Fragments have been cut");
-
     // Create a 2D array of numberOfCodedFragments rows and fragmentSize columns
     byte** CODED_F;
     CODED_F = new byte*[numberOfCodedFragments];
     for (unsigned i = 0; i < numberOfCodedFragments; i++) {
         CODED_F[i] = new byte[fragmentSize];
     }
-
-    Serial.println("Allocation successful");
 
     for (unsigned y(1); y <= numberOfCodedFragments; y++) {
         byte s[fragmentSize]; 
@@ -128,9 +111,6 @@ void TeleFile::encode(byte dataIn[], unsigned lenIn, byte dataOut[]) {
 
     for (unsigned i(1); i <= numberOfCodedFragments; i++) {
         for (unsigned j(1); j <= fragmentSize; j++) {
-            // Print i and j indices
-            //Serial.print("Writing at index:");
-            //Serial.println((i-1)*fragmentSize+(j-1));
             dataOut[(i-1)*fragmentSize+(j-1)] = CODED_F[i-1][j-1];
         }
     }
@@ -159,36 +139,22 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
     uint16_t numberOfUncodedFragmentsRaw = dataIn[2] << 8 | dataIn[3];
     const unsigned numberOfUncodedFragments = unsigned(numberOfUncodedFragmentsRaw);
 
-    //Serial.print("Metada of the fragment is : "); Serial.print(fragmentNumber); Serial.print(" ");
-    //Serial.print(numberOfUncodedFragments); Serial.print(" fragment size : "); Serial.print(fragmentSize);
-    Serial.print("Progress : "); Serial.print(indexLen); Serial.print("/"); Serial.println(numberOfUncodedFragments);
+    // Serial.print("Progress : "); Serial.print(indexLen); Serial.print("/"); Serial.println(numberOfUncodedFragments);
 
     bool A[numberOfUncodedFragments];
     for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
         A[i-1] = 0;
     }
 
-    //Serial.print("Fragment number : "); Serial.print(fragmentNumber);
-    //Serial.print(", Number of uncoded fragments : "); Serial.println(numberOfUncodedFragments);
-
     matrixLine(fragmentNumber,numberOfUncodedFragments,A);
-    
-    /* // Print A
-    Serial.print("A = [");
-    for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-        Serial.print(A[i-1]);
-        Serial.print(" ");
-    }
-    Serial.println("]"); */
 
     byte fragMemory[fragmentSize];
-
     for (unsigned i(1); i<=fragmentSize; i++) {
         fragMemory[i-1] = dataIn[i+3];
     }
 
     if (fragmentNumber<lastFrameNumber) {
-        Serial.println("New file detected");
+        // Serial.println("New file detected");
         currentStatus = RECEIVING_FRAMES;
         // Reset index to 0
         indexLen = 0;
@@ -200,17 +166,6 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
         for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
             indexOrder[i-1] = 0;
         }
-
-        /* CODED_F_MEM = new byte*[NB_FRAGMENT_MAX];
-        for (unsigned i = 0; i < NB_FRAGMENT_MAX; i++) {
-            CODED_F_MEM[i] = new byte[fragmentSizeInput];
-        }
-
-        combinationMatrix = new byte*[NB_FRAGMENT_MAX];
-        for (unsigned i = 0; i < NB_FRAGMENT_MAX; i++) {
-            combinationMatrix[i] = new byte[NB_FRAGMENT_MAX];
-        } */
-
         // Reset the CODED_F_MEM array
         for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
             for (unsigned j(1); j <= fragmentSize; j++) {
@@ -251,8 +206,6 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
             col = index[o-1];
 
             if (A[col-1] == 1) {
-                //Serial.print("For coded fragment "); Serial.print(fragmentNumber); Serial.print(" eliminating col "); Serial.println(col);
-
                 for (unsigned j(1); j <= numberOfUncodedFragments; j++) {
                     A[j-1] = A[j-1] ^ combinationMatrix[col-1][j-1];
                 }
@@ -263,8 +216,6 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
             }
         }
         if (!isEmpty(A, numberOfUncodedFragments)) {
-
-            //Serial.print("Adding fragment "); Serial.print(fragmentNumber); //Serial.println(" to the memory");
             unsigned resultFind = findFirstOne(A,numberOfUncodedFragments);
             index[indexLen++] = resultFind;
             indexOrderLen++;
@@ -280,22 +231,13 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
             sortIndex(index, indexLen, indexOrder);
     
             if (indexLen == numberOfUncodedFragments) {
-                //Serial.println("We received enough fragments to decode the file");
                 for (unsigned k(numberOfUncodedFragments-1); k >= 1; k--) {
-                    //Serial.print(k); Serial.print(" ");
-                    //o = indexOrder[k-1];
-                    //Serial.print("A : ");
                     for (unsigned i(1); i<=numberOfUncodedFragments; i++) {
                         A[i-1] = combinationMatrix[k-1][i-1];
-                        //Serial.print(A[i-1]);
                     }
-                    //Serial.println("");
-                    //Serial.print("Frag : ");
                     for (unsigned i(1); i<=fragmentSize; i++) {
                         fragMemory[i-1] = CODED_F_MEM[k-1][i-1];
-                        //Serial.print(fragMemory[i-1]);
                     }
-                    //Serial.println("");
                     for (unsigned p(k+1); p<=numberOfUncodedFragments; p++) {
                         if (A[p-1]) {
                             for (unsigned i(1); i<=fragmentSize; i++) {
@@ -324,9 +266,6 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
                 Serial.println("Success !");
                 functionCallBack(dataOutput, realFileSize);
             }
-        }
-        else {
-            //Serial.println("Line empty");
         }
         lastFrameNumber = fragmentNumber;
     }
@@ -369,7 +308,6 @@ void sortIndex(unsigned dataArrayInRaw[], unsigned len, unsigned dataOrderInRaw[
     for (unsigned i(1); i <= len; i++) {
         for (unsigned j(i+1); j <= len; j++) {
             if ((dataArrayIn[i-1] > dataArrayIn[j-1])) {
-                ////Serial.print("Swap detected : "); //Serial.print(dataArrayIn[i-1]); //Serial.print(" is smaller than "); //Serial.println(dataArrayIn[j-1]);
                 temp = dataArrayIn[i-1];
                 dataArrayIn[i-1] = dataArrayIn[j-1];
                 dataArrayIn[j-1] = temp;
@@ -390,28 +328,7 @@ void sortIndex(unsigned dataArrayInRaw[], unsigned len, unsigned dataOrderInRaw[
 // will be the sum (XOR) of the first fragment, the third fragment, the fifth fragment, the seventh fragment, etc...
 void matrixLine(unsigned N, unsigned M, bool matrixLineResult[]) {
 
-    /* int m(0);
-
-    m = M-(M%32);
-
-    if (M==32) {
-        m=32;
-    }
-    else {
-        m=64;
-    } */
-
-    // This variable will be a key to get the same coding and decoding parity matrix on both sides
-    // The key is different for each total number of fragments.
-    /* unsigned initV[128];
-
-    initV[32]=25;
-    initV[40]=7;
-    initV[48]=17;
-    initV[56]=13;
-    initV[64]=2; */
-
-    // 13 is the key?
+    // keyValue is the key?
     unsigned keyValue = 13;
     unsigned x = keyValue+260*N;
     unsigned nbCoeff = 0;
@@ -436,8 +353,6 @@ int prbs16(int x) {
         x = x ^ 0xB400;
     }
     return x;
-    //unsigned b = ((x >> 0) ^ (x >> 2) ^ (x >> 3) ^ (x >> 5)) & 1;
-    //return (x >> 1) | (b << 15);
 }
 
 
