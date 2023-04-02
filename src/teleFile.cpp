@@ -3,7 +3,7 @@
 TeleFile::TeleFile(unsigned fragmentSizeInput, double codingRateInput, void (*function)(byte [], unsigned)) 
 : fragmentSize(fragmentSizeInput), codingRate(codingRateInput), functionCallBack(function), lastFrameNumber(2), currentStatus(WAITING)
 {
-    CODED_F_MEM = new byte*[NB_FRAGMENT_MAX];
+    /* CODED_F_MEM = new byte*[NB_FRAGMENT_MAX];
     for (int i = 0; i < NB_FRAGMENT_MAX; i++) {
         CODED_F_MEM[i] = new byte[fragmentSizeInput];
     }
@@ -11,14 +11,14 @@ TeleFile::TeleFile(unsigned fragmentSizeInput, double codingRateInput, void (*fu
     combinationMatrix = new byte*[NB_FRAGMENT_MAX];
     for (int i = 0; i < NB_FRAGMENT_MAX; i++) {
         combinationMatrix[i] = new byte[NB_FRAGMENT_MAX];
-    }
+    } */
 }
 
 TeleFile::~TeleFile() {
-        for (int i = 0; i < NB_FRAGMENT_MAX; i++) {
-            delete[] CODED_F_MEM[i];
-        }
-        delete[] CODED_F_MEM;
+    /* for (int i = 0; i < NB_FRAGMENT_MAX; i++) {
+        delete[] CODED_F_MEM[i];
+    }
+    delete[] CODED_F_MEM; */
 }
 
 unsigned TeleFile::getFragmentSize() {
@@ -143,7 +143,6 @@ void TeleFile::encode(byte dataIn[], unsigned lenIn, byte dataOut[]) {
 }
 
 void TeleFile::decode(byte dataIn[], unsigned len) {
-    ////Serial.println("Entering decode function");
 
     // Cast the first two bytes of the dataIn array as uint16_t in fragmentNumber
     uint16_t fragmentNumberRaw = dataIn[0] << 8 | dataIn[1];
@@ -152,45 +151,23 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
     uint16_t numberOfUncodedFragmentsRaw = dataIn[2] << 8 | dataIn[3];
     const unsigned numberOfUncodedFragments = unsigned(numberOfUncodedFragmentsRaw);
 
-    ////Serial.println("A");
-
-    ////Serial.print("Metada of the fragment is : ");
-    ////Serial.print(fragmentNumber);
-    ////Serial.print(" ");
-    ////Serial.println(numberOfUncodedFragments);
+    //Serial.print("Metada of the fragment is : "); Serial.print(fragmentNumber); Serial.print(" ");
+    //Serial.print(numberOfUncodedFragments); Serial.print(" fragment size : "); Serial.println(fragmentSize);
 
     static unsigned indexOrderLen = 0;
     static unsigned indexLen = 0;
-
-    ////Serial.println("B");
 
     bool A[numberOfUncodedFragments];
     for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
         A[i-1] = 0;
     }
 
-    ////Serial.println("C");
-
     matrixLine(unsigned(fragmentNumber),unsigned(numberOfUncodedFragments),A);
-
-    ////Serial.println("D");
-
-    // Print the content of A
-    /* //Serial.println("Line is : ");
-    for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-        //Serial.print(A[i-1]); 
-    }
-    //Serial.println(""); */
-
     byte fragMemory[fragmentSize];
-
-    ////Serial.println("E");
 
     for (unsigned i(1); i<=fragmentSize; i++) {
         fragMemory[i-1] = dataIn[i+3];
     }
-
-    ////Serial.println("F");
 
     if (fragmentNumber<lastFrameNumber) {
         //Serial.println("New frame detected");
@@ -232,191 +209,63 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
 
         indexOrder[indexOrderLen] = 1;
         lastFrameNumber = fragmentNumber;
-
-        /* // We will print a bunch of stuff: the index, the indexLen, the indexOrder, the inderOrderLen, the combinationMatrix, the CODED_F_MEM
-        //Serial.println("Index is : ");
-        for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-            //Serial.print(index[i-1]); 
-        }
-        //Serial.println("");
-
-        //Serial.print("IndexLen is : ");
-        //Serial.println(indexLen);
-        
-        //Serial.println("IndexOrder is : ");
-        for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-            //Serial.print(indexOrder[i-1]); 
-        }
-        //Serial.println("");
-
-        //Serial.print("IndexOrderLen is : ");
-        //Serial.println(indexOrderLen);
-
-        //Serial.println("Combination Matrix is : ");
-        for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-            for (unsigned j(1); j <= numberOfUncodedFragments; j++) {
-                //Serial.print(combinationMatrix[i-1][j-1]); 
-                if (j != numberOfUncodedFragments) {
-                //Serial.print(",");
-                }
-            }
-            //Serial.println("");
-        }
-
-        //Serial.println("CODED_F_MEM is : ");
-        for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-            for (unsigned j(1); j <= fragmentSize; j++) {
-                //Serial.print(CODED_F_MEM[i-1][j-1]); 
-                if (j != fragmentSize) {
-                //Serial.print(",");
-                }
-            }
-            //Serial.println("");
-        }*/
-
-        //delay(10000000);
-        
     } 
     else if (currentStatus == RECEIVING_FRAMES) {
-        ////Serial.println("'bout to decode the frame :)");
+
         static unsigned o;
         static unsigned col;
-        //Serial.print("Lenght of index : "); //Serial.println(indexLen);
+
         for (unsigned i(1); i<=indexLen; i++) {
-            ////Serial.println(" A ");
+
             o = indexOrder[i-1];
-            ////Serial.println(" B ");
             col = index[o-1];
-            //Serial.print("i-1 : "); //Serial.println(i-1);
-            //Serial.print("o : "); //Serial.println(o);
-            //Serial.print("col : "); //Serial.println(col);
-
-            ////Serial.print(indexLen);
-            ////Serial.print(" ");
-            ////Serial.print(o);
-            ////Serial.print(" ");
-            ////Serial.print(col);
-
-            // Print indx
-            //Serial.print("idx :");
-            for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-                //Serial.print(index[i-1]); 
-            }
-            //Serial.println("");
-
-            // Print indexOrder
-            //Serial.print("idxorder :");
-            for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-                //Serial.print(indexOrder[i-1]); 
-            } 
-            //Serial.println("");
-
-            //if(indexLen>4) {
-                //delay(100000000);
-            //}
 
             if (A[col-1] == 1) {
-                //Serial.print("For fragment "); //Serial.print(fragmentNumber); //Serial.print(" eliminating col "); //Serial.println(col);
-                
-                /* //Serial.print("A before the xor is : ");
-                for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-                    //Serial.print(A[i-1]); 
-                }
-                //Serial.println("");  */
-                
+                Serial.print("For coded fragment "); Serial.print(fragmentNumber); Serial.print(" eliminating col "); Serial.println(col);
+
                 for (unsigned j(1); j <= numberOfUncodedFragments; j++) {
-                    //Serial.print(A[j-1]); //Serial.print(" ^ "); //Serial.print(combinationMatrix[col-1][j-1]); //Serial.print(" = "); //Serial.println(A[j-1] ^ combinationMatrix[col-1][j-1]);
                     A[j-1] = A[j-1] ^ combinationMatrix[col-1][j-1];
                 }
 
                 for (unsigned j(1); j <= fragmentSize; j++) {
                     fragMemory[j-1] = fragMemory[j-1] ^ CODED_F_MEM[col-1][j-1];
                 }
-                // We want to print a bunch of things: o, col, A, fragMemory
-                /* //Serial.print("o is : "); //Serial.println(o);
-                //Serial.print("col is : "); //Serial.println(col);
-
-                //Serial.print("A after the xor is : ");
-                for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-                    //Serial.print(A[i-1]); 
-                }
-                //Serial.println("");
-
-                //Serial.println("FragMemory is : ");
-                for (unsigned i(1); i <= fragmentSize; i++) {
-                    //Serial.print(fragMemory[i-1]); 
-                }
-                delay(1000000000); */
             }
         }
         if (!isEmpty(A, numberOfUncodedFragments)) {
-            //Serial.print("Adding fragment "); //Serial.print(fragmentNumber); //Serial.println(" to the memory");
-            
-            // Print index
-            //Serial.print(" idx just before record adding ");
-            for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-                //Serial.print(index[i-1]); 
-            }
-            //Serial.println("");
 
-            
+            Serial.print("Adding fragment "); Serial.print(fragmentNumber); //Serial.println(" to the memory");
             unsigned resultFind = findFirstOne(A,numberOfUncodedFragments);
-            
-            //Serial.print("resultFind is : "); //Serial.println(resultFind);
-            
             index[indexLen++] = resultFind;
-
             indexOrderLen++;
-
-            // Print A
-            //Serial.print("A is : ");
-            for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-                //Serial.print(A[i-1]); 
-            }
-            //Serial.println("");
-
-            // Print index
-            //Serial.print(" idx just after adding ");
-            for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-                //Serial.print(index[i-1]); 
-            }
-            //Serial.println("");
-            
-            // Print indexOrder
-            //Serial.print("idxorder just after adding fragment : ");
-            for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-               //Serial.print(indexOrder[i-1]); 
-            }
-            //Serial.println("");
 
             for (unsigned i(1); i <= fragmentSize; i++) {
                 CODED_F_MEM[index[indexLen-1]-1][i-1] = fragMemory[i-1];
             }
+
             for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
                 combinationMatrix[index[indexLen-1]-1][i-1] = A[i-1];
             }
 
-            //Serial.print("The sort is done on a lenght of : ");
-            //Serial.println(indexLen);
             sortIndex(index, indexLen, indexOrder);
-
-            // Print indexOrder
-            //Serial.print("idxorder just after sort: ");
-            for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-               //Serial.print(indexOrder[i-1]); 
-            }
-            //Serial.println("");
-
+    
             if (indexLen == numberOfUncodedFragments) {
                 //Serial.println("We received enough fragments to decode the file");
                 for (unsigned k(numberOfUncodedFragments-1); k >= 1; k--) {
-                    o = indexOrder[k-1];
+                    //Serial.print(k); Serial.print(" ");
+                    //o = indexOrder[k-1];
+                    //Serial.print("A : ");
                     for (unsigned i(1); i<=numberOfUncodedFragments; i++) {
                         A[i-1] = combinationMatrix[k-1][i-1];
+                        //Serial.print(A[i-1]);
                     }
+                    //Serial.println("");
+                    //Serial.print("Frag : ");
                     for (unsigned i(1); i<=fragmentSize; i++) {
                         fragMemory[i-1] = CODED_F_MEM[k-1][i-1];
+                        //Serial.print(fragMemory[i-1]);
                     }
+                    //Serial.println("");
                     for (unsigned p(k+1); p<=numberOfUncodedFragments; p++) {
                         if (A[p-1]) {
                             for (unsigned i(1); i<=fragmentSize; i++) {
@@ -432,7 +281,10 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
                     }
                 }
                 currentStatus = SUCCESS_IDLE;
+                Serial.println("");
+                Serial.println("Success !"); 
                 functionCallBack(dataOutput, numberOfUncodedFragments*fragmentSize);
+                delay(1000000);
             }
         }
         lastFrameNumber = fragmentNumber;
@@ -442,7 +294,7 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
 
 bool isEmpty(bool data[], unsigned len) {
     for (unsigned i(1); i <= len; i++) {
-        if (!data[i-1]) {
+        if (data[i-1]) {
             return false;
         }
     }
@@ -459,22 +311,6 @@ unsigned findFirstOne(bool data[], unsigned len) {
 }
 
 void sortIndex(unsigned dataArrayInRaw[], unsigned len, unsigned dataOrderInRaw[]) {
-
-    /* //Serial.println("_______________________________________");
-    
-    //Serial.println("dataArrayInRaw is : ");
-
-    for (unsigned i(1); i <= len; i++) {
-        //Serial.print(dataArrayInRaw[i-1]); 
-    }
-    //Serial.println("");
-
-    //Serial.println("dataOrderInRaw is : ");
-
-    for (unsigned i(1); i <= len; i++) {
-        //Serial.print(dataOrderInRaw[i-1]); 
-    }
-    //Serial.println(""); */
 
     unsigned temp(0);
     unsigned tempOrder(0);
@@ -505,19 +341,6 @@ void sortIndex(unsigned dataArrayInRaw[], unsigned len, unsigned dataOrderInRaw[
     for (unsigned i(1); i <= len; i++) {
         dataOrderInRaw[i-1] = dataOrderIn[i-1];
     }
-
-    /* //Serial.println("dataArray out is : ");
-    for (unsigned i(1); i <= len; i++) {
-        //Serial.print(dataArrayIn[i-1]); 
-    }
-    //Serial.println("");
-
-    //Serial.println("dataOrder out is : ");
-    for (unsigned i(1); i <= len; i++) {
-        //Serial.print(dataOrderIn[i-1]); 
-    }
-    //Serial.println("");
-    //Serial.println("_______________________________________"); */
 }
 
 // This function should return the line N of the parity check matrix NxM

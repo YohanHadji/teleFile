@@ -4,20 +4,14 @@
 //#define FRAGMENT_SIZE 8
 //#define NB_FRAGMENT_PER_FRAME 4
 
-#define NB_FRAGMENT_MAX 1000
-
-/* struct packet {
-    byte packetData[256];
-    uint8_t len;
-    byte packetId;
-}; */
+#define NB_FRAGMENT_MAX 500
+#define FRAGMENT_SIZE_MAX 110
 
 enum status {
     WAITING = 0,
     RECEIVING_FRAMES,
     SUCCESS_IDLE,
 };
-
 
 class TeleFile {
   public:
@@ -29,11 +23,13 @@ class TeleFile {
     unsigned getFragmentSize();
   private:
     //byte buffer[MAX_BUFFER_SIZE];
-    const unsigned fragmentSize;
-    const double codingRate;
+    unsigned fragmentSize;
+    double codingRate;
     void (*functionCallBack)(byte [], unsigned);
-    byte** CODED_F_MEM;
-    byte** combinationMatrix;
+    //byte** CODED_F_MEM;
+    //byte** combinationMatrix;
+    byte   CODED_F_MEM[NB_FRAGMENT_MAX][FRAGMENT_SIZE_MAX];
+    byte   combinationMatrix[NB_FRAGMENT_MAX][NB_FRAGMENT_MAX];
     unsigned lastFrameNumber;
     unsigned index[NB_FRAGMENT_MAX];
     unsigned indexOrder[NB_FRAGMENT_MAX];

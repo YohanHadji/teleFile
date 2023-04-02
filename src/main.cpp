@@ -21,7 +21,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 Capsule device1(0xFF,0xFA,handlePacketDevice1);
 
-int fragmentSize = 16;
+int fragmentSize = 32;
 double codingRate = 2.0;
 
 TeleFile fileTransfer1(fragmentSize,codingRate,handleFileTransfer1);
@@ -30,7 +30,7 @@ void setup() {
   DEVICE1_PORT.begin(DEVICE1_BAUD);
   Serial.begin(115200);
 
-  delay(2000);
+  delay(100);
 
   //const unsigned imageBufferSize = findImageSize();
   //byte imageBuffer[imageBufferSize];
@@ -38,9 +38,9 @@ void setup() {
 
   // Random data buffer, will be replaced by an actual file later
   if (SENDER) {
-    delay(3000);
+    delay(500);
     SD.begin(chipSelect);
-    const unsigned imageBufferSize = 512;
+    const unsigned imageBufferSize = 1024;
     byte imageBuffer[imageBufferSize];
     for (unsigned i = 0; i < imageBufferSize; i++) {
       imageBuffer[i] = uint8_t(i);
@@ -99,14 +99,10 @@ void loop() {
 
 void handlePacketDevice1(byte packetId, byte dataIn[], unsigned len) {
 
-  const unsigned dataSize = len;
-  byte dataOut[dataSize];
-  memcpy(dataOut, dataIn, dataSize);
-
   switch (packetId) {
     case 0x00:
-      //Serial.print("Received correct file fragment number: "); Serial.println(dataOut[0] << 8 | dataOut[1]);
-      fileTransfer1.decode(dataOut, dataSize);
+      Serial.print("Received correct file fragment number: "); Serial.println(dataIn[0] << 8 | dataIn[1]);
+      fileTransfer1.decode(dataIn, len);
     break;
     case 0x01:
     break;
@@ -118,10 +114,13 @@ void handlePacketDevice1(byte packetId, byte dataIn[], unsigned len) {
 void handleFileTransfer1(byte dataIn[], unsigned dataSize) {
   // Do something with the file
   Serial.print("Received file of size "); Serial.println(dataSize);
+  digitalWrite(LED_BUILTIN, HIGH);
   for (unsigned i = 0; i < dataSize; i++) {
     Serial.print(dataIn[i]); Serial.print(" ");
   }
   Serial.println();
+  delay(100);
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 unsigned findImageSize() {
