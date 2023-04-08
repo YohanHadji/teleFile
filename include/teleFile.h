@@ -1,7 +1,7 @@
 #include "Arduino.h"
 
-#define NB_FRAGMENT_MAX 500
-#define FRAGMENT_SIZE_MAX 200
+#define NB_FRAGMENT_MAX 250
+#define FRAGMENT_SIZE_MAX 100
 
 // The max lenght of the transmitted file will be (FRAGMENT_SIZE_MAX * NB_FRAGMENT_MAX) ~ 100 000 bytes
 
