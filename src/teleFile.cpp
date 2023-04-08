@@ -246,7 +246,8 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
                         } 
                     }
                 }
-                byte dataOutput[numberOfUncodedFragments*fragmentSize];
+                byte *dataOutput;
+                dataOutput = new byte[numberOfUncodedFragments*fragmentSize];
                 static bool stopByteFound = false;
                 unsigned realFileSize = 0;
                 for (unsigned i(numberOfUncodedFragments); i>=1; i--) {
@@ -265,6 +266,8 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
                 //Serial.println("");
                 //Serial.println("Success !");
                 functionCallBack(dataOutput, realFileSize);
+                stopByteFound = false;
+                delete[] dataOutput;
             }
         }
         lastFrameNumber = fragmentNumber;
