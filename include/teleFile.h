@@ -1,7 +1,9 @@
 #include "Arduino.h"
 
-#define NB_FRAGMENT_MAX 250
+#define NB_FRAGMENT_MAX 500
 #define FRAGMENT_SIZE_MAX 100
+
+#define BITS_PER_ROW (NB_FRAGMENT_MAX + 7)/8
 
 // The max lenght of the transmitted file will be (FRAGMENT_SIZE_MAX * NB_FRAGMENT_MAX) ~ 100 000 bytes
 
@@ -24,7 +26,13 @@ class TeleFile {
     double codingRate;
     void (*functionCallBack)(byte [], unsigned);
     byte   CODED_F_MEM[NB_FRAGMENT_MAX][FRAGMENT_SIZE_MAX];
-    byte   combinationMatrix[NB_FRAGMENT_MAX][NB_FRAGMENT_MAX];
+    
+    byte combinationBitMatrix[NB_FRAGMENT_MAX][BITS_PER_ROW];
+
+    void setCombinationBitMatrix(unsigned, unsigned, bool);
+    bool getCombinationBitMatrix(unsigned, unsigned);
+    void resetCombinationBitMatrix();
+
     unsigned lastFrameNumber;
     unsigned index[NB_FRAGMENT_MAX];
     unsigned indexOrder[NB_FRAGMENT_MAX];

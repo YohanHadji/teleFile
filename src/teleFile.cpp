@@ -174,11 +174,12 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
         }
 
         // Reset the combinationMatrix
-        for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
+        /* for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
             for (unsigned j(1); j <= numberOfUncodedFragments; j++) {
                 combinationMatrix[i-1][j-1] = 0;
             }
-        }
+        } */
+        resetCombinationBitMatrix();
 
         index[indexLen++] = findFirstOne(A,numberOfUncodedFragments);
 
@@ -189,7 +190,7 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
 
         // Copy A in the row index of the combinationMatrix
         for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-            combinationMatrix[index[0]-1][i-1] = A[i-1];
+            setCombinationBitMatrix(index[0]-1,i-1, A[i-1]);
         }
 
         indexOrder[indexOrderLen] = 1;
@@ -207,7 +208,7 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
 
             if (A[col-1] == 1) {
                 for (unsigned j(1); j <= numberOfUncodedFragments; j++) {
-                    A[j-1] = A[j-1] ^ combinationMatrix[col-1][j-1];
+                    A[j-1] = A[j-1] ^ getCombinationBitMatrix(col-1,j-1);
                 }
 
                 for (unsigned j(1); j <= fragmentSize; j++) {
@@ -225,7 +226,7 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
             }
 
             for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
-                combinationMatrix[index[indexLen-1]-1][i-1] = A[i-1];
+                setCombinationBitMatrix(index[indexLen-1]-1,i-1, A[i-1]);
             }
 
             sortIndex(index, indexLen, indexOrder);
@@ -233,7 +234,7 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
             if (indexLen == numberOfUncodedFragments) {
                 for (unsigned k(numberOfUncodedFragments-1); k >= 1; k--) {
                     for (unsigned i(1); i<=numberOfUncodedFragments; i++) {
-                        A[i-1] = combinationMatrix[k-1][i-1];
+                        A[i-1] = getCombinationBitMatrix(k-1,i-1);
                     }
                     for (unsigned i(1); i<=fragmentSize; i++) {
                         fragMemory[i-1] = CODED_F_MEM[k-1][i-1];
@@ -358,4 +359,29 @@ int prbs16(int x) {
     return x;
 }
 
+// Function to set a bit in the array
+void TeleFile::setCombinationBitMatrix(unsigned row, unsigned col, bool value) {
+  int bitIndex = col % 8;
+  int byteIndex = col / 8;
+  if (value) {
+    combinationBitMatrix[row][byteIndex] |= (1 << bitIndex);
+  } else {
+    combinationBitMatrix[row][byteIndex] &= ~(1 << bitIndex);
+  }
+}
+
+// Function to get a bit from the array
+bool TeleFile::getCombinationBitMatrix(unsigned row, unsigned col) {
+  int bitIndex = col % 8;
+  int byteIndex = col / 8;
+  return combinationBitMatrix[row][byteIndex] & (1 << bitIndex);
+}
+
+void TeleFile::resetCombinationBitMatrix() {
+  for (int i = 0; i < NB_FRAGMENT_MAX; i++) {
+    for (int j = 0; j < BITS_PER_ROW / 8; j++) {
+      combinationBitMatrix[i][j] = 0;
+    }
+  }
+}
 
