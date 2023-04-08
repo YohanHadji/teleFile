@@ -254,7 +254,7 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
 
                         byte currentByte = CODED_F_MEM[i-1][j-1];
 
-                        if (!stopByteFound and currentByte == 0xFF) {
+                        if (!stopByteFound and currentByte == STOP_BYTE) {
                             realFileSize = ((i-1)*fragmentSize+j-1)-1;
                             stopByteFound = true;
                         }
@@ -262,8 +262,8 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
                     }
                 }
                 currentStatus = SUCCESS_IDLE;
-                Serial.println("");
-                Serial.println("Success !");
+                //Serial.println("");
+                //Serial.println("Success !");
                 functionCallBack(dataOutput, realFileSize);
             }
         }
