@@ -30,7 +30,6 @@ unsigned TeleFile::computeCodedSize(unsigned lenIn) {
 
     return numberOfCodedFragments*fragmentSize;
 }
-
 void TeleFile::encode(byte dataIn[], unsigned lenIn, byte dataOut[]) {
 
     // The following two blocs of code are calculating minimum number of uncoded
@@ -52,34 +51,19 @@ void TeleFile::encode(byte dataIn[], unsigned lenIn, byte dataOut[]) {
     }
     const unsigned numberOfCodedFragments = numberOfCodedFragmentsTemp;
 
-    // Create a 2D array of numberOfUncodedFragments rows and fragmentSize columns
-    byte** UNCODED_F; 
-    UNCODED_F = new byte*[numberOfUncodedFragments];
-    for (unsigned i = 0; i < numberOfUncodedFragments; i++) {
-        UNCODED_F[i] = new byte[fragmentSize];
-    }
-
     for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
         for (unsigned j(1); j <= fragmentSize; j++) {
-            if (((i-1)*fragmentSize+(j-1)) < lenIn) {
-                UNCODED_F[i-1][j-1] = dataIn[(i-1)*fragmentSize+(j-1)];
-            }
-            else if (((i-1)*fragmentSize+(j-1)) == lenIn) {
-                UNCODED_F[i-1][j-1] = STOP_BYTE;
-            }
-            else {
-                UNCODED_F[i-1][j-1] = 0;
+            if (((i-1)*fragmentSize+(j-1)) >= lenIn) {
+                if (((i-1)*fragmentSize+(j-1)) == lenIn) {
+                    dataIn[(i-1)*fragmentSize+(j-1)] = STOP_BYTE;
+                }
+                else {
+                    dataIn[(i-1)*fragmentSize+(j-1)] = 0;
+                }
             }
         }
-    }
-
-    // Create a 2D array of numberOfCodedFragments rows and fragmentSize columns
-    byte** CODED_F;
-    CODED_F = new byte*[numberOfCodedFragments];
-    for (unsigned i = 0; i < numberOfCodedFragments; i++) {
-        CODED_F[i] = new byte[fragmentSize];
-    }
-
+    }      
+    
     for (unsigned y(1); y <= numberOfCodedFragments; y++) {
         byte s[fragmentSize]; 
         bool A[numberOfUncodedFragments];
@@ -99,32 +83,15 @@ void TeleFile::encode(byte dataIn[], unsigned lenIn, byte dataOut[]) {
                 
                 // Then each byte of the fragment is added to the linear combination
                 for (unsigned z(1); z <= fragmentSize; z++) {
-                    s[z-1] = s[z-1] ^ UNCODED_F[x-1][z-1];
+                    s[z-1] = s[z-1] ^ dataIn[(x-1)*fragmentSize+(z-1)];
                 }
             }
         }
         // We then copy the linear combination vector to the coded fragment
         for (unsigned z(1); z <= fragmentSize; z++) {
-            CODED_F[y-1][z-1] = s[z-1];
+            dataOut[(y-1)*fragmentSize+(z-1)] = s[z-1];
         }
     }
-
-    for (unsigned i(1); i <= numberOfCodedFragments; i++) {
-        for (unsigned j(1); j <= fragmentSize; j++) {
-            dataOut[(i-1)*fragmentSize+(j-1)] = CODED_F[i-1][j-1];
-        }
-    }
-
-    // Delete UNCODED_F and CODED_F
-    for (unsigned i = 0; i < numberOfUncodedFragments; i++) {
-        delete[] UNCODED_F[i];
-    }
-    delete[] UNCODED_F;  
-
-    for (unsigned i = 0; i < numberOfCodedFragments; i++) {
-            delete[] CODED_F[i];
-        }
-    delete[] CODED_F;
 }
 
 void TeleFile::decode(byte dataIn[], unsigned len) {
