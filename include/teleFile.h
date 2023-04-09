@@ -20,10 +20,25 @@ class TeleFile {
     void decode(byte [], unsigned);
     void encode(byte [], unsigned, byte[]);
     unsigned computeCodedSize(unsigned lenIn);
+    unsigned computeUncodedSize(unsigned lenIn);
     unsigned getFragmentSize();
+    unsigned getNumberOfCodedFragments();
+    unsigned getNumberOfUncodedFragments();
+    unsigned getLastEndTime();
+    unsigned getLastPacketSent();
+    void     setLastPacketSent(unsigned);
+    bool     isTransmissionOver();
+    void     setTransmissionOver(bool);
+    void     setEndTime(unsigned long);
+    void     endTransmission();
   private:
     unsigned fragmentSize;
+    unsigned numberOfCodedFragments;
+    unsigned numberOfUncodedFragments;
     double codingRate;
+    unsigned long lastEndTime;
+    bool transmissionOver;
+    unsigned lastPacketSent;
     void (*functionCallBack)(byte [], unsigned);
     byte   CODED_F_MEM[NB_FRAGMENT_MAX][FRAGMENT_SIZE_MAX];
     

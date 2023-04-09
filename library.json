@@ -1,6 +1,6 @@
 {
     "name": "teleFile",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "description": "This generic library fragment and encode large bytes array to transmit them over the air and be able to reconstruct them on the other side.",
     "keywords": "protocol, packet, teleFile",
     "repository":

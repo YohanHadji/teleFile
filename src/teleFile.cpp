@@ -1,15 +1,27 @@
 #include "teleFile.h"
 
 TeleFile::TeleFile(unsigned fragmentSizeInput, double codingRateInput, void (*function)(byte [], unsigned)) 
-: fragmentSize(fragmentSizeInput), codingRate(codingRateInput), functionCallBack(function), lastFrameNumber(2), currentStatus(WAITING)
+:   fragmentSize(fragmentSizeInput), codingRate(codingRateInput), functionCallBack(function), lastFrameNumber(NB_FRAGMENT_MAX), currentStatus(WAITING), lastEndTime(0), transmissionOver(true), lastPacketSent(0)
 {
 }
 
 TeleFile::~TeleFile() {
 }
 
-unsigned TeleFile::getFragmentSize() {
-    return fragmentSize;
+unsigned TeleFile::getFragmentSize() { return fragmentSize; }
+unsigned TeleFile::getNumberOfCodedFragments() { return numberOfCodedFragments; }
+unsigned TeleFile::getNumberOfUncodedFragments() { return numberOfUncodedFragments; }
+unsigned TeleFile::getLastEndTime() { return lastEndTime; }
+unsigned TeleFile::getLastPacketSent() { return lastPacketSent; }
+bool TeleFile::isTransmissionOver() { return transmissionOver; }
+
+void TeleFile::setLastPacketSent(unsigned lastPacketSentIn) { lastPacketSent = lastPacketSentIn; }
+void TeleFile::setEndTime(unsigned long timeIn) { lastEndTime = timeIn; }
+void TeleFile::setTransmissionOver(bool transmissionOverIn) { transmissionOver = transmissionOverIn; }
+void TeleFile::endTransmission() { 
+    setTransmissionOver(true);
+    setEndTime(millis());
+    setLastPacketSent(0);
 }
 
 unsigned TeleFile::computeCodedSize(unsigned lenIn) {
@@ -30,6 +42,18 @@ unsigned TeleFile::computeCodedSize(unsigned lenIn) {
 
     return numberOfCodedFragments*fragmentSize;
 }
+
+unsigned TeleFile::computeUncodedSize(unsigned lenIn) {
+
+    unsigned numberOfUncodedFragments = int((lenIn+1) / fragmentSize);
+    double lenDouble = (lenIn+1);
+    double fragmentSizeDouble = fragmentSize;
+    if (lenDouble / fragmentSizeDouble != int(lenDouble / fragmentSizeDouble)) {
+        numberOfUncodedFragments++;
+    }
+    
+    return numberOfUncodedFragments*fragmentSize;
+}
 void TeleFile::encode(byte dataIn[], unsigned lenIn, byte dataOut[]) {
 
     // The following two blocs of code are calculating minimum number of uncoded
@@ -41,7 +65,7 @@ void TeleFile::encode(byte dataIn[], unsigned lenIn, byte dataOut[]) {
     if (lenDouble / fragmentSizeDouble != int(lenDouble / fragmentSizeDouble)) {
         numberOfUncodedFragmentsTemp++;
     }
-    const unsigned numberOfUncodedFragments = numberOfUncodedFragmentsTemp;
+    numberOfUncodedFragments = numberOfUncodedFragmentsTemp;
 
     unsigned numberOfCodedFragmentsTemp = int(numberOfUncodedFragments * codingRate);
     double numberOfUncodedFragmentsDouble = numberOfUncodedFragments;
@@ -49,7 +73,7 @@ void TeleFile::encode(byte dataIn[], unsigned lenIn, byte dataOut[]) {
     if (numberOfUncodedFragmentsDouble * codingRateDouble != int(numberOfUncodedFragmentsDouble * codingRateDouble)) {
         numberOfCodedFragmentsTemp++;
     }
-    const unsigned numberOfCodedFragments = numberOfCodedFragmentsTemp;
+    numberOfCodedFragments = numberOfCodedFragmentsTemp;
 
     for (unsigned i(1); i <= numberOfUncodedFragments; i++) {
         for (unsigned j(1); j <= fragmentSize; j++) {
@@ -104,7 +128,7 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
     const unsigned fragmentNumber = unsigned(fragmentNumberRaw);
     // Cast the next two bytes of the dataIn array as uint16_t in numberOfCodedFragments
     uint16_t numberOfUncodedFragmentsRaw = dataIn[2] << 8 | dataIn[3];
-    const unsigned numberOfUncodedFragments = unsigned(numberOfUncodedFragmentsRaw);
+    numberOfUncodedFragments = unsigned(numberOfUncodedFragmentsRaw);
 
     // Serial.print("Progress : "); Serial.print(indexLen); Serial.print("/"); Serial.println(numberOfUncodedFragments);
 
@@ -242,7 +266,6 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
     }
 }
 
-
 bool isEmpty(bool data[], unsigned len) {
     for (unsigned i(1); i <= len; i++) {
         if (data[i-1]) {
@@ -351,4 +374,3 @@ void TeleFile::resetCombinationBitMatrix() {
     }
   }
 }
-
