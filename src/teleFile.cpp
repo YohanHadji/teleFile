@@ -124,10 +124,10 @@ void TeleFile::decode(byte dataIn[], unsigned len) {
     static unsigned indexLen = 0;
 
     // Cast the first two bytes of the dataIn array as uint16_t in fragmentNumber
-    uint16_t fragmentNumberRaw = dataIn[0] << 8 | dataIn[1];
+    uint16_t fragmentNumberRaw = dataIn[1] << 8 | dataIn[0];
     const unsigned fragmentNumber = unsigned(fragmentNumberRaw);
     // Cast the next two bytes of the dataIn array as uint16_t in numberOfCodedFragments
-    uint16_t numberOfUncodedFragmentsRaw = dataIn[2] << 8 | dataIn[3];
+    uint16_t numberOfUncodedFragmentsRaw = dataIn[3] << 8 | dataIn[2];
     numberOfUncodedFragments = unsigned(numberOfUncodedFragmentsRaw);
 
     // Serial.print("Progress : "); Serial.print(indexLen); Serial.print("/"); Serial.println(numberOfUncodedFragments);
